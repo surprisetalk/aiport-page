@@ -1,17 +1,27 @@
 
 var _ = require('underscore');
-var pile_page = require('../aiport-pile-page/page.js');
+var pile = require('../aiport-pile/pile.js');
+var scrap = require('../aiport-scrap/scrap.js');
 
-// TODO: find defined error page, else pass the error on to the server to use default 404 page
-// var errorer = ( scoop_page ) =>
-// scoop_page.length ? _.first( scoop_page ) : error;
-// var errorerer = () =>
-// errorer( pile_page.fetch( {} ) );
+// TODO: error handling
 
-var publisher = scoop_page =>
+var pageleter = query => pagelet_data =>
+    scrap( pagelet_data.scrap )( "options" in pagelet_data ? pagelet_data.options : {}, pageletser( "pagelets" in pagelet_data ? pagelet_data.pagelets : [] ) )( query );
+
+var pageletser = pagelets_data => query =>
+    Promise.all( pagelets_data.map( pageleter( query ) ) )
+        .then( htmls => htmls.join('') );
+
+var pager = query => page_data =>
+    pageletser( "pagelets" in page_data ? page_data.pagelets : [] )( query );
+
+var scooper = scoop_page =>
     scoop_page.length
 	? _.first( scoop_page )
 	: Promise.reject( { code: 404, msg: "page not found" } );
 
 module.exports = ( params, query ) => 
-    publisher( pile_page.fetch( { path: params.join('/') } ) );
+    pile('page')
+        .fetch( { route: params.join('/') } )
+        .then( scooper )
+        .then( pager( query ) );
